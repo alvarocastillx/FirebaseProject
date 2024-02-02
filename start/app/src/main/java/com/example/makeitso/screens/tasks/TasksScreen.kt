@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.makeitso.R.drawable as AppIcon
 import com.example.makeitso.R.string as AppText
 import com.example.makeitso.common.composable.ActionToolbar
@@ -42,12 +43,19 @@ fun TasksScreen(
   openScreen: (String) -> Unit,
   viewModel: TasksViewModel = hiltViewModel()
 ) {
+
+  val tasks = viewModel
+    .tasks
+    .collectAsStateWithLifecycle(emptyList())
+
   TasksScreenContent(
     onAddClick = viewModel::onAddClick,
     onSettingsClick = viewModel::onSettingsClick,
     onTaskCheckChange = viewModel::onTaskCheckChange,
     onTaskActionClick = viewModel::onTaskActionClick,
-    openScreen = openScreen
+    openScreen = openScreen,
+    tasks = tasks,
+    viewModel = viewModel
   )
 
   LaunchedEffect(viewModel) { viewModel.loadTaskOptions() }
@@ -62,8 +70,12 @@ fun TasksScreenContent(
   onSettingsClick: ((String) -> Unit) -> Unit,
   onTaskCheckChange: (Task) -> Unit,
   onTaskActionClick: ((String) -> Unit, Task, String) -> Unit,
-  openScreen: (String) -> Unit
+  openScreen: (String) -> Unit,
+  tasks: State<List<Task>>,
+  viewModel: TasksViewModel
 ) {
+
+
   Scaffold(
     floatingActionButton = {
       FloatingActionButton(
@@ -85,32 +97,17 @@ fun TasksScreenContent(
       )
 
       Spacer(modifier = Modifier.smallSpacer())
-
+      val options by viewModel.options
       LazyColumn {
-        items(emptyList<Task>(), key = { it.id }) { taskItem ->
+        items(tasks.value, key = { it.id }) { taskItem ->
           TaskItem(
             task = taskItem,
-            options = listOf(),
+            options = options,
             onCheckChange = { onTaskCheckChange(taskItem) },
             onActionClick = { action -> onTaskActionClick(openScreen, taskItem, action) }
           )
         }
       }
     }
-  }
-}
-
-@Preview(showBackground = true)
-@ExperimentalMaterialApi
-@Composable
-fun TasksScreenPreview() {
-  MakeItSoTheme {
-    TasksScreenContent(
-      onAddClick = { },
-      onSettingsClick = { },
-      onTaskCheckChange = { },
-      onTaskActionClick = { _, _, _ -> },
-      openScreen = { }
-    )
   }
 }
